@@ -4,6 +4,12 @@
 """
 Small helper to write to std out  bytestream formatted as follows:
     routingKey message
+
+
+Example:
+
+>> gzcat offer/view/2015/4/10/2015-04-10.json.log.gz  | ./line.py
+
 """
 import json
 import sys
