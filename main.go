@@ -1,22 +1,22 @@
 package main
 
 import (
+	"coelho/receive"
+	"coelho/send"
 	"flag"
-	"rabbit/receive"
-	"rabbit/send"
 )
 
 var (
-	receiveMode = flag.Bool("receive", true, "should run in receive mode?")
-	sendMode    = flag.Bool("send", true, "should run in send mode?")
-	msg         = flag.String("msg", "", "messaage to send")
+	receiveMode = flag.Bool("receive", false, "should run in receive mode?")
+	sendMode    = flag.Bool("send", false, "should run in send mode?")
 )
 
 func main() {
 	flag.Parse()
 	if *receiveMode {
 		receive.Forever()
-	} else {
-		send.Msg(*msg)
+	}
+	if *sendMode {
+		send.BodyFromStdIn()
 	}
 }
