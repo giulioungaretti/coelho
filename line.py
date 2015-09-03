@@ -20,7 +20,7 @@ def send(line):
     s = js.get("scope", None)
     a = js.get("action", None)
     rk = "{}.{}".format(s, a)
-    sys.stdout.write('"{}" "{}"'.format(rk,  line))
+    sys.stdout.write('{} {}'.format(rk,  line))
 
 if __name__ == '__main__':
     for line in sys.stdin:
