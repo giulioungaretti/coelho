@@ -68,8 +68,9 @@ func Connect() (RabbitMQQueue, error) {
 	q := RabbitMQQueue{}
 	q.Con = conn
 	q.Ch = ch
-	q.Name = "hello"
-	q.Durable = false
+	q.Name = "task"
+	// mimimal guarantee to not lose message.
+	q.Durable = true
 	q.Delete = false
 	q.Exclusive = false
 	q.NoWait = false
