@@ -25,21 +25,49 @@ func (r *RabbitMQConnection) format() (s string) {
 	return
 }
 
-// RabbitMQQueue hold the details of a queue
-type RabbitMQQueue struct {
+// Rabbit hold the details and the Con, Ch, Queue
+type Rabbit struct {
 	Con       *amqp.Connection
 	Ch        *amqp.Channel // channel to which the queue is attached
-	Queue     amqp.Queue
+	Queue     *amqp.Queue
 	Name      string
 	Durable   bool
 	Delete    bool // delete when usused
 	Exclusive bool
 	NoWait    bool
+	RK        string
+	Exchange  string
 	Arguments map[string]interface{}
 }
 
+func (q *Rabbit) declareExc() {
+	err := q.Ch.ExchangeDeclare(
+		q.Exchange, // name
+		"topic",    // type
+		true,       // durable
+		false,      // auto-deleted
+		false,      // internal
+		false,      // no-wait
+		nil,        // arguments
+	)
+	failOnError(err, "Failed to declare an exchange")
+}
+
+// bind the queue to an exchange
+func (r *Rabbit) bind() {
+	log.Printf("Binding queue %s to exchange %s with routing key %s",
+		r.Queue.Name, r.Exchange, r.RK)
+	err := r.Ch.QueueBind(
+		r.Queue.Name, // queue name
+		r.RK,         // routing key
+		r.Exchange,   // exchange
+		false,
+		nil)
+	failOnError(err, "Failed to bind a queue")
+}
+
 // decleare returns a decleared queue
-func (q *RabbitMQQueue) declare() (err error) {
+func (q *Rabbit) declareQueue() {
 	qd, err := q.Ch.QueueDeclare(
 		q.Name,
 		q.Durable,
@@ -48,16 +76,13 @@ func (q *RabbitMQQueue) declare() (err error) {
 		q.NoWait,
 		q.Arguments,
 	)
-	if err != nil {
-		q.Queue = qd
-		return nil
-	}
-	return err
+	q.Queue = &qd
+	failOnError(err, "Failed to declare a queue")
 }
 
 // Connect starts an amqp connection and returns an initialized queue.
 // TODO this should read from env, or json or something alike
-func Connect() (RabbitMQQueue, error) {
+func (q *Rabbit) Connect() error {
 	c := RabbitMQConnection{}
 	c.addr = "192.168.56.10"
 	c.port = "5672"
@@ -65,19 +90,19 @@ func Connect() (RabbitMQQueue, error) {
 	failOnError(err, "Failed to connect to RabbitMQ")
 	ch, err := conn.Channel()
 	failOnError(err, "Failed to open a channel")
-	q := RabbitMQQueue{}
 	q.Con = conn
 	q.Ch = ch
-	q.Name = "task"
-	// mimimal guarantee to not lose message.
+	q.Name = "events"
+	q.Exchange = "events"
+	q.RK = "#"
+	// mimimal guarantee to not lose messages.
 	q.Durable = true
 	q.Delete = false
 	q.Exclusive = false
 	q.NoWait = false
 	q.Arguments = nil
-	err = q.declare()
-	if err != nil {
-		return q, nil
-	}
-	return q, err
+	q.declareExc()
+	q.declareQueue()
+	q.bind()
+	return err
 }
