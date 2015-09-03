@@ -1,11 +1,9 @@
 package receive
 
 import (
-	"bytes"
+	"coelho/core"
 	"fmt"
 	"log"
-	"rabbit/core"
-	"time"
 )
 
 func failOnError(err error, msg string) {
@@ -16,7 +14,8 @@ func failOnError(err error, msg string) {
 }
 
 func Forever() {
-	queue, err := core.Connect()
+	queue := core.Rabbit{}
+	err := queue.Connect()
 	failOnError(err, "Failed to register a consumer")
 	defer queue.Con.Close()
 	defer queue.Ch.Close()
@@ -41,15 +40,11 @@ func Forever() {
 	forever := make(chan bool)
 	go func() {
 		for d := range msgs {
+			log.Printf("Received a message: %s", d.RoutingKey)
 			log.Printf("Received a message: %s", d.Body)
 			d.Ack(false)
-			dot_count := bytes.Count(d.Body, []byte("."))
-			t := time.Duration(dot_count)
-			time.Sleep(t * time.Second)
-			log.Printf("Done")
 		}
 	}()
-
 	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
 	<-forever
 }
