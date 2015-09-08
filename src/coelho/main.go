@@ -1,22 +1,25 @@
 package main
 
 import (
+	"coelho/env"
 	"coelho/receive"
 	"coelho/send"
-	"flag"
 )
 
 var (
-	receiveMode = flag.Bool("receive", false, "should run in receive mode?")
-	sendMode    = flag.Bool("send", false, "should run in send mode?")
+	envVars env.VARS
 )
 
+func init() {
+	// init the env variables and flags
+	envVars = env.Init()
+}
+
 func main() {
-	flag.Parse()
-	if *receiveMode {
-		receive.Forever()
+	if envVars.Receive {
+		receive.Forever(&envVars)
 	}
-	if *sendMode {
-		send.BodyFromStdIn()
+	if envVars.Send {
+		send.BodyFromStdIn(&envVars)
 	}
 }

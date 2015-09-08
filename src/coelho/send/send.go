@@ -3,6 +3,7 @@ package send
 import (
 	"bufio"
 	"coelho/core"
+	"coelho/env"
 	"os"
 	"strings"
 
@@ -35,18 +36,18 @@ func Msg(r core.Rabbit, body string, rk string) {
 	failOnError(err, "Failed to publish a message")
 }
 
-func BodyFromStdIn() {
-	queue := core.Rabbit{}
-	err := queue.Connect()
+func BodyFromStdIn(e *env.VARS) {
+	rabbit := core.Rabbit{}
+	err := rabbit.Connect(e)
 	failOnError(err, "Failed to declare a queue")
-	defer queue.Con.Close()
-	defer queue.Ch.Close()
+	defer rabbit.Con.Close()
+	defer rabbit.Ch.Close()
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		text := strings.Split(scanner.Text(), " ")
 		if len(text) > 1 {
-			Msg(queue, body(text), rk(text))
+			Msg(rabbit, body(text), rk(text))
 		}
 	}
 	if err := scanner.Err(); err != nil {

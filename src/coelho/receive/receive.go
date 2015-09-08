@@ -2,6 +2,7 @@ package receive
 
 import (
 	"coelho/core"
+	"coelho/env"
 	"fmt"
 	"log"
 )
@@ -13,9 +14,9 @@ func failOnError(err error, msg string) {
 	}
 }
 
-func Forever() {
+func Forever(e *env.VARS) {
 	queue := core.Rabbit{}
-	err := queue.Connect()
+	err := queue.Connect(e)
 	failOnError(err, "Failed to register a consumer")
 	defer queue.Con.Close()
 	defer queue.Ch.Close()

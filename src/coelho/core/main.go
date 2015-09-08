@@ -1,41 +1,12 @@
 package core
 
 import (
-	"flag"
+	"coelho/env"
 	"fmt"
-	"os"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/streadway/amqp"
 )
-
-var (
-	rabbitMqAddres string
-	rabbitMqPort   string
-	rabbitMqUsr    string
-	rabbitMqPwd    string
-)
-
-func init() {
-	// load env variables
-	// crahses if they don't exist
-	rabbitMqAddres = os.Getenv("rabbitMqAddres")
-	if rabbitMqAddres == "" {
-		log.Fatalf("RabbitMQ cluster addres was not found in the enviroment")
-	}
-	rabbitMqPort = os.Getenv("rabbitMqPort")
-	if rabbitMqPort == "" {
-		log.Fatalf("RabbitMQ cluster port was not found in the enviroment")
-	}
-	rabbitMqPwd = os.Getenv("rabbitMqPwd")
-	if rabbitMqPwd == "" {
-		log.Fatalf("RabbitMQ cluster pwd was not found in the enviroment")
-	}
-	rabbitMqUsr = os.Getenv("rabbitMqUsr")
-	if rabbitMqUsr == "" {
-		log.Fatalf("RabbitMQ cluster usr was not found in the enviroment")
-	}
-}
 
 func failOnError(err error, msg string) {
 	if err != nil {
@@ -57,38 +28,38 @@ func (r *rabbitMQConnection) format() (s string) {
 
 // Rabbit hold the details and the Con, Ch, Queue
 type Rabbit struct {
-	Arguments map[string]interface{}
-	Ch        *amqp.Channel // channel to which the queue is attached
-	Con       *amqp.Connection
-	Delete    bool // delete when usused
-	Durable   bool
-	Exchange  string
-	Exclusive bool
-	Name      string
-	NoWait    bool
-	Queue     *amqp.Queue
-	RK        string
-	Type      string
+	Arguments    map[string]interface{}
+	Ch           *amqp.Channel // channel to which the queue is attached
+	Con          *amqp.Connection
+	Delete       bool // delete when usused
+	Durable      bool
+	Exchange     string
+	Exclusive    bool
+	Name         string
+	NoWait       bool
+	Queue        *amqp.Queue
+	RK           string
+	ExchangeType string
 }
 
 //DeclareExc decleares an exchange with false auto-delede, and false internal flags.
 func (q *Rabbit) DeclareExc() {
 	err := q.Ch.ExchangeDeclare(
-		q.Exchange,  // name
-		q.Type,      // type
-		q.Durable,   // durable
-		false,       // auto-deleted
-		false,       // internal
-		q.NoWait,    // no-wait
-		q.Arguments, // arguments
+		q.Exchange,     // name
+		q.ExchangeType, // type
+		q.Durable,      // durable
+		false,          // auto-deleted
+		false,          // internal
+		q.NoWait,       // no-wait
+		q.Arguments,    // arguments
 	)
 	failOnError(err, "Failed to declare an exchange")
 }
 
 // Bind the queue to an exchange
 func (r *Rabbit) Bind() {
-	log.Printf("Binding queue %s to exchange %s with routing key %s",
-		r.Queue.Name, r.Exchange, r.RK)
+	log.Infof("Binding queue %s to exchange %s with routing key %s with %s exchange ",
+		r.Queue.Name, r.Exchange, r.RK, r.ExchangeType)
 	err := r.Ch.QueueBind(
 		r.Queue.Name,
 		r.RK,
@@ -140,40 +111,30 @@ func (q *Rabbit) ConnectRaw() error {
 	return err
 }
 
-// ConnectRaw connects a Rabbit. The rabbit know what to do based on flags.
-func (q *Rabbit) Connect() error {
+// ConnectRaw connects a Rabbit. The rabbit know what to do based on the env.Vars.
+func (q *Rabbit) Connect(e *env.VARS) error {
 	// init empty rabbit
+	log.SetLevel(log.DebugLevel)
 	c := rabbitMQConnection{}
-	c.port = rabbitMqPort
-	c.addr = rabbitMqAddres
+	c.port = e.RabbitMqPort
+	c.addr = e.RabbitMqAddres
 	conn, err := amqp.Dial(c.format())
 	failOnError(err, "Failed to connect to RabbitMQ")
 	ch, err := conn.Channel()
 	failOnError(err, "Failed to open a channel")
-
-	// parse flags
-	exch := flag.String("exchange", "events", "name of the rabbit exchange")
-	name := flag.String("name", "events", "name of rabbit queue")
-	rk := flag.String("rk", "#", "routing key to bind to")
-	durable := flag.Bool("durable", true, "make the queue durable")
-	nowait := flag.Bool("nowait", false, "make the queue nowait")
-	delete := flag.Bool("delete", false, "make the queue delete")
-	exclusive := flag.Bool("exclusive", false, "make the queue exclusive")
-	flag.Parse()
-
-	// now update the rabbitt
+	// now update the rabbit
 	q.Con = conn
 	q.Ch = ch
-	q.Exchange = *exch
-	q.Name = *name
-	q.RK = *rk
-	q.Durable = *durable
-	q.Delete = *delete
-	q.Exclusive = *exclusive
-	q.NoWait = *nowait
+	q.Exchange = e.Exchange
+	q.ExchangeType = e.ExchangeType
+	q.Name = e.Name
+	q.RK = e.RK
+	q.Durable = e.Durable
+	q.Delete = e.Delete
+	q.Exclusive = e.Exclusive
+	q.NoWait = e.NoWait
 	// TODO  nil for now, we won't need them anyway.
 	q.Arguments = nil
-
 	// exc-queue-bind
 	q.DeclareExc()
 	q.DeclareQueue()
