@@ -40,6 +40,7 @@ type Rabbit struct {
 	Queue        *amqp.Queue
 	RK           string
 	ExchangeType string
+	Knows        bool
 }
 
 //DeclareExc decleares an exchange with false auto-delede, and false internal flags.
@@ -96,6 +97,9 @@ func (q *Rabbit) DeclareQueue() {
 //q.NoWait = false
 //q.Arguments = nil
 func (q *Rabbit) ConnectRaw() error {
+	if !q.Knows {
+		log.Fatalf("Poor rabbit does not know what to do, rember to tell him")
+	}
 	c := rabbitMQConnection{}
 	c.addr = "192.168.56.10"
 	c.port = "5672"
