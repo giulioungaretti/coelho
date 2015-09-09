@@ -6,8 +6,10 @@
 # Distributed under terms of the MIT license.
 #
 
-export rabbitMqAddres='192.168.56.10'
-export rabbitMqPort='5672'
-export rabbitMqUsr='guest'
-export rabbitMqPwd='guest'
-
+host='192.168.56.10'
+port='5672'
+user='guest'
+pass='guest'
+vhost=''
+rabbitMqAddres='amqp://'$user':'$pass'@'$host':'$port'/'$vhost
+export rabbitMqAddres

@@ -18,14 +18,10 @@ const (
 )
 
 var (
-	//env
 	rabbitMqAddres   string
-	rabbitMqPort     string
-	rabbitMqUsr      string
-	rabbitMqPwd      string
 	CHOELO_MAX_CORES int
 	// flags
-	logLevel    = flag.String("log_level", "warn", "pick log level (error|warn|debug)")
+	logLevel    = flag.String("log_level", "debug", "pick log level (error|warn|debug)")
 	delete      = flag.Bool("delete", false, "make the queue delete")
 	durable     = flag.Bool("durable", true, "make the queue durable")
 	exch        = flag.String("exchange", "events", "name of the rabbit exchange")
@@ -68,18 +64,6 @@ func init() {
 	rabbitMqAddres = os.Getenv("rabbitMqAddres")
 	if rabbitMqAddres == "" {
 		log.Fatalf("RabbitMQ cluster addres was not found in the enviroment")
-	}
-	rabbitMqPort = os.Getenv("rabbitMqPort")
-	if rabbitMqPort == "" {
-		log.Fatalf("RabbitMQ cluster port was not found in the enviroment")
-	}
-	rabbitMqPwd = os.Getenv("rabbitMqPwd")
-	if rabbitMqPwd == "" {
-		log.Fatalf("RabbitMQ cluster pwd was not found in the enviroment")
-	}
-	rabbitMqUsr = os.Getenv("rabbitMqUsr")
-	if rabbitMqUsr == "" {
-		log.Fatalf("RabbitMQ cluster usr was not found in the enviroment")
 	}
 	CHOELO_MAX_CORES = convStringToInt(os.Getenv("CHOELO_MAX_CORES"))
 	if CHOELO_MAX_CORES == 0 {
@@ -124,9 +108,6 @@ func Init() VARS {
 		Exclusive:      *exclusive,
 		NoWait:         *nowait,
 		RabbitMqAddres: rabbitMqAddres,
-		RabbitMqPort:   rabbitMqPort,
-		RabbitMqUsr:    rabbitMqUsr,
-		RabbitMqPwd:    rabbitMqPwd,
 		Receive:        *receiveMode,
 		Send:           *sendMode,
 	}
