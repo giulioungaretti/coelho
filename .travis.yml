@@ -3,8 +3,9 @@ go:
   - 1.5
 sudo: false
 install:
-  - go get github.com/Sirupsen/logrus 
+  - go get github.com/Sirupsen/logrus
   - go get github.com/streadway/amqp
+  - go get golang.org/x/net/context
 
 script:
   - go test
