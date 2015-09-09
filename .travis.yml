@@ -7,7 +7,7 @@ install:
   - go get github.com/streadway/amqp
 
 script:
-  - go test -test.v
+  - go test
 env:
   #example env variable settings
   -travis=true
