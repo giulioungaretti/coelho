@@ -1,4 +1,4 @@
-lgithub.com/mrb/hobanguage: go
+language: go
 go:
   - 1.5
 sudo: false
@@ -7,7 +7,7 @@ install:
   - go get github.com/streadway/amqp
 
 script:
-  - go test -test.v
+  - gb test -test.v
 env:
   #example env variable settings
   -travis=true
