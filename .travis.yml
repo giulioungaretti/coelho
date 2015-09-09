@@ -3,17 +3,16 @@ go:
   - 1.5
 sudo: false
 install:
-  - go get github.com/constabulary/gb/...
+  - go get github.com/Sirupsen/logrus 
+  - go get github.com/streadway/amqp
+
 script:
-  - gb build
   - gb test -test.v
 env:
   #example env variable settings
   -travis=true
   -level=debug
   -cpu=10
-  -AWS_ACCESS_KEY=unset
-  -AWS_SECRET_KEY=unset
 
 notifications:
     email: false
