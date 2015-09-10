@@ -67,7 +67,7 @@ func init() {
 	}
 	CHOELO_MAX_CORES = convStringToInt(os.Getenv("CHOELO_MAX_CORES"))
 	if CHOELO_MAX_CORES == 0 {
-		log.Warnf("Using %v cores.", CPU)
+		log.Infof("Using %v cores.", CPU)
 		CHOELO_MAX_CORES = CPU
 	}
 	flag.Parse()
