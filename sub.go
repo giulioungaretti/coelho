@@ -33,7 +33,7 @@ func (r Rabbit) Subscribe(sessions chan Session, messages chan<- Message, done c
 				continue
 			}
 			for msg := range deliveries {
-				messages <- Message(msg.Body)
+				messages <- Message{msg.Body, msg.RoutingKey}
 			}
 			log.Infof("Closed session.")
 			sub.Close()

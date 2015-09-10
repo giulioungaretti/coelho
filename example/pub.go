@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"strings"
 
 	"golang.org/x/net/context"
 )
@@ -38,6 +39,16 @@ func init() {
 
 }
 
+func body(line []string) []byte {
+	s := strings.Join(line[1:], " ")
+	return []byte(s)
+}
+
+func rk(line []string) string {
+	s := line[0]
+	return s
+}
+
 // read is this application's translation to the coelho.Message format, scanning from
 // stdin.
 func read(r io.Reader) <-chan coelho.Message {
@@ -46,7 +57,8 @@ func read(r io.Reader) <-chan coelho.Message {
 		defer close(lines)
 		scan := bufio.NewScanner(r)
 		for scan.Scan() {
-			lines <- coelho.Message(scan.Bytes())
+			line := strings.Split(scan.Text(), " ")
+			lines <- coelho.Message{body(line), rk(line)}
 		}
 	}()
 	return lines
@@ -55,13 +67,13 @@ func read(r io.Reader) <-chan coelho.Message {
 // write is this application's subscriber of application messages, printing to
 // stdout.
 func write(w io.Writer) chan<- coelho.Message {
-	lines := make(chan coelho.Message)
+	messages := make(chan coelho.Message)
 	go func() {
-		for line := range lines {
-			fmt.Fprintln(w, string(line))
+		for msg := range messages {
+			fmt.Fprintln(w, string(msg.Body))
 		}
 	}()
-	return lines
+	return messages
 }
 
 func main() {
@@ -80,5 +92,6 @@ func main() {
 		r.Publish(r.Redial(ctx, e.RabbitMqAddres), read(os.Stdin), done)
 		done()
 	}()
+
 	<-ctx.Done()
 }

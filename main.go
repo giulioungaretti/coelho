@@ -17,7 +17,10 @@ import (
 
 // message is the application type for a message.  This can contain identity,
 // or a reference to the recevier chan for further demuxing.
-type Message []byte
+type Message struct {
+	Body []byte
+	Rk   string
+}
 
 // Session composes an amqp.Connection with an amqp.Channel
 type Session struct {
