@@ -7,6 +7,8 @@
 package coelho
 
 import (
+	"time"
+
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/streadway/amqp"
@@ -102,16 +104,14 @@ func (s Session) Close() error {
  *amqp://user:pass@host:10000/vhost
  *==============
  */
-func (r Rabbit) Redial(ctx context.Context, url string) chan chan Session {
-	sessions := make(chan chan Session)
-
+func (r Rabbit) Redial(ctx context.Context, url string) chan Session {
+	sessions := make(chan Session)
 	go func() {
-		sess := make(chan Session)
 		defer close(sessions)
-
 		for {
 			select {
-			case sessions <- sess:
+			default:
+				log.Info("Dialing")
 			case <-ctx.Done():
 				log.Info("shutting down Session factory")
 				return
@@ -119,7 +119,12 @@ func (r Rabbit) Redial(ctx context.Context, url string) chan chan Session {
 
 			conn, err := amqp.Dial(url)
 			if err != nil {
-				log.Fatalf("cannot (re)dial: %v: %q", err, url)
+				log.Warnf("Can't dial. Waiting 10 seconds...")
+				time.Sleep(10 * time.Second)
+				conn, err = amqp.Dial(url)
+				if err != nil {
+					log.Fatalf("cannot (re)dial: %v: %q", err, url)
+				}
 			}
 
 			ch, err := conn.Channel()
@@ -132,7 +137,9 @@ func (r Rabbit) Redial(ctx context.Context, url string) chan chan Session {
 			}
 
 			select {
-			case sess <- Session{conn, ch}:
+			// this will block here if the subscriber is not using the session
+			case sessions <- Session{conn, ch}:
+				log.Info("New session init.")
 			case <-ctx.Done():
 				log.Infof("shutting down new Session")
 				return
