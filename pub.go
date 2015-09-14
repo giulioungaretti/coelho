@@ -24,6 +24,10 @@ func (r Rabbit) Publish(sessions chan Session, messages <-chan Message, done con
 			log.Printf("cannot consume from exclusive queue: %q, %v", r.Name, err)
 			return
 		}
+		if err := r.Bind(pub.Channel); err != nil {
+			log.Errorf("cannot consume without a binding to exchange: %+v, %v", r, err)
+			continue
+		}
 		log.Printf("[x] publishing")
 		for {
 			var msg Message
