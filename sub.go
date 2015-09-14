@@ -7,7 +7,7 @@ import (
 
 // Subscribe consumes deliveries from an exclusive queue from an exchange and sends to the application specific messages chan.
 // handles shutting down gracefully in case of sig-int. Or disconnects.
-func (r Rabbit) Subscribe(sessions chan Session, messages chan<- Message, done context.CancelFunc) {
+func (r Rabbit) Subscribe(sessions chan Session, messages chan<- Message, ctx context.Context, done context.CancelFunc) {
 	DieGracefully(done)
 	queue := r.Name
 	// subscribe forever
@@ -33,12 +33,18 @@ func (r Rabbit) Subscribe(sessions chan Session, messages chan<- Message, done c
 				continue
 			}
 			for msg := range deliveries {
-				messages <- Message{msg.Body, msg.RoutingKey}
+				// handle done signaling
+				select {
+				case messages <- Message{msg.Body, msg.RoutingKey}:
+				case <-ctx.Done():
+					return
+				}
 			}
 			log.Infof("Closed session.")
 			sub.Close()
 			// try again
 			continue
+			done()
 		}
 	}
 }
