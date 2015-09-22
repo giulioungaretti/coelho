@@ -5,8 +5,7 @@
 #
 # Distributed under terms of the MIT license.
 #
-
-host='192.168.56.10'
+host='192.168.33.10'
 port='5672'
 user='guest'
 pass='guest'
