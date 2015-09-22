@@ -41,13 +41,13 @@ func (r Rabbit) Subscribe(sessions chan Session, messages chan<- Message, ctx co
 			//this will never end because deliveries is closed
 			// only on connection/amqp-channel errors.
 			select {
-			case <-time.After(10 * time.Second):
-				// if we wait more than 10 second to send
+			case <-time.After(10 * time.Millisecond):
+				// if we wait more than 1 second to send
 				// trhough the channel it means  tha
 				// the reciever is blocked so we just  exit
 				// and avoid losing too much messages
 				log.Warnf("Timeout")
-				done()
+				return
 			case messages <- Message{msg.Body, msg.RoutingKey}:
 				msg.Ack(false)
 			case <-ctx.Done():
