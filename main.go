@@ -1,22 +1,16 @@
-// Command pubsub is an example of a fanout exchange with dynamic reliable
-// membership, reading from stdin, writing to stdout.
-//
-// This example shows how to implement reconnect logic independent from a
-// publish/subscribe loop with bridges to application types.
-
+// package coelho offers  pub/sub functions to send/recieve messages from rabbitMQ.
+// The idea is to have a simple exported Subscribe and Publish functions.
+// Sub
 package coelho
 
 import (
-	"time"
-
 	log "github.com/Sirupsen/logrus"
-
 	"github.com/streadway/amqp"
 	"golang.org/x/net/context"
+	"time"
 )
 
-// message is the application type for a message.  This can contain identity,
-// or a reference to the recevier chan for further demuxing.
+// Message mirrors a rabbitMQ message
 type Message struct {
 	Body []byte
 	Rk   string
@@ -28,7 +22,7 @@ type Session struct {
 	*amqp.Channel
 }
 
-// Rabbit hold the details and the Con, Ch, Queue
+// Rabbit holds the details of the Con, Ch, Queue
 type Rabbit struct {
 	Arguments    map[string]interface{}
 	Delete       bool // delete when usused
@@ -42,7 +36,7 @@ type Rabbit struct {
 	RK           string
 }
 
-//DeclareExc decleares an exchange with false auto-delede, and false internal flags.
+// DeclareExc decleares an exchange with false auto-delete, and false internal flags.
 func (r Rabbit) DeclareExc(ch *amqp.Channel) error {
 	err := ch.ExchangeDeclare(
 		r.Exchange,     // name
@@ -82,7 +76,7 @@ func (r Rabbit) DeclareQueue(ch *amqp.Channel) (amqp.Queue, error) {
 	return qd, err
 }
 
-//DieGracefully recovers from a panic, closes connections nicely
+// DieGracefully recovers from a panic, closes connections nicely
 // and  panics again.
 func DieGracefully(done context.CancelFunc) {
 	if r := recover(); r != nil {

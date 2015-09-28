@@ -1,15 +1,15 @@
 package coelho
 
 import (
-	"sync/atomic"
-	"time"
-
 	log "github.com/Sirupsen/logrus"
 	"golang.org/x/net/context"
+	"sync/atomic"
+	"time"
 )
 
-// Subscribe consumes deliveries from an exclusive queue from an exchange and sends to the application specific messages chan.
-// handles shutting down gracefully in case of sig-int. Or disconnects.
+// Subscribe consumes deliveries from an exclusive queue from an exchange and
+// sends to the application specific messages chan.  Handles shutting down
+// gracefully in case of sig-int. Or disconnects.
 func (r Rabbit) Subscribe(sessions chan Session, messages chan<- Message, ctx context.Context, done context.CancelFunc, counts *uint64) {
 	DieGracefully(done)
 	queue := r.Name
@@ -42,10 +42,9 @@ func (r Rabbit) Subscribe(sessions chan Session, messages chan<- Message, ctx co
 			// only on connection/amqp-channel errors.
 			select {
 			case <-time.After(10 * time.Millisecond):
-				// if we wait more than 1 second to send
-				// trhough the channel it means  tha
-				// the reciever is blocked so we just  exit
-				// and avoid losing too much messages
+				// if we wait more than 10 * Millisecond to send trhough the
+				// channel it means  that the reciever is blocked so we just
+				// exit and avoid losing too much messages
 				log.Warnf("Timeout")
 				return
 			case messages <- Message{msg.Body, msg.RoutingKey}:

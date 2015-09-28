@@ -6,7 +6,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// publish publishes messages to a reconnecting Session to a fanout exchange.
+// Publish publishes messages to a reconnecting Session to a n exchange.
 // It receives from the application specific source of messages.
 // Keeps a pending channel in case of small timeouts.
 func (r Rabbit) Publish(sessions chan Session, messages <-chan Message, done context.CancelFunc) {
