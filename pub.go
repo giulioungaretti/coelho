@@ -2,10 +2,8 @@ package coelho
 
 import (
 	log "github.com/Sirupsen/logrus"
-
-	"golang.org/x/net/context"
-
 	"github.com/streadway/amqp"
+	"golang.org/x/net/context"
 )
 
 // publish publishes messages to a reconnecting Session to a fanout exchange.
@@ -35,7 +33,6 @@ func (r Rabbit) Publish(sessions chan Session, messages <-chan Message, done con
 			default:
 				reading = messages
 			case msg = <-pending:
-				//TODO pass info here
 				// exchange, key string, mandatory, immediate bool, msg Publishing
 				err := pub.Publish(r.Exchange, msg.Rk, false, false, amqp.Publishing{
 					Body: msg.Body,
