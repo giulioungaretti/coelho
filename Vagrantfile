@@ -72,7 +72,6 @@ Vagrant.configure(2) do |config|
         sudo apt-get update
         sudo apt-get install -q -y screen htop vim curl wget
         sudo apt-get install -q -y rabbitmq-server
-
         sudo # RabbitMQ Plugins
         sudo service rabbitmq-server stop
         sudo rabbitmq-plugins enable rabbitmq_management
@@ -82,6 +81,5 @@ Vagrant.configure(2) do |config|
         echo "set editing-mode vi" >> /home/$USER/.inputrc
         echo "set keymap vi" >> /home/$USER/.inputrc
         echo EDITOR="vim" >> /home/$USER/.bashrc
-  #   sudo apt-get install -y apache2
   SHELL
 end
