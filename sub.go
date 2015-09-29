@@ -8,8 +8,10 @@ import (
 )
 
 // Subscribe consumes deliveries from an exclusive queue from an exchange and
-// sends to the application specific messages chan.  Handles shutting down
-// gracefully in case of sig-int. Or disconnects.
+// sends to the application specific messages chan.
+//******** NOTE that mesasges are not acked.**************
+// it's the client responsability  to ack the message.
+//Handles shutting down gracefully in case of sig-int. Or disconnects.
 func (r Rabbit) Subscribe(sessions chan Session, messages chan<- Message, ctx context.Context, done context.CancelFunc, counts *uint64) {
 	DieGracefully(done)
 	queue := r.Name
@@ -47,8 +49,12 @@ func (r Rabbit) Subscribe(sessions chan Session, messages chan<- Message, ctx co
 				// exit and avoid losing too much messages
 				log.Warnf("Timeout")
 				return
-			case messages <- Message{msg.Body, msg.RoutingKey}:
-				msg.Ack(false)
+			case messages <- Message{
+				Body: msg.Body,
+				Rk:   msg.RoutingKey,
+				Msg:  &msg,
+			}:
+				// msg is not acked
 			case <-ctx.Done():
 				log.Infof("Closed session.")
 				sub.Close()

@@ -14,6 +14,7 @@ import (
 type Message struct {
 	Body []byte
 	Rk   string
+	Msg  *amqp.Delivery
 }
 
 // Session composes an amqp.Connection with an amqp.Channel

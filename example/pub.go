@@ -58,7 +58,7 @@ func read(r io.Reader) <-chan coelho.Message {
 		scan := bufio.NewScanner(r)
 		for scan.Scan() {
 			line := strings.Split(scan.Text(), " ")
-			lines <- coelho.Message{body(line), rk(line)}
+			lines <- coelho.Message{body(line), rk(line), nil}
 		}
 	}()
 	return lines
