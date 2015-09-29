@@ -7,12 +7,12 @@ import (
 	"coelho/env"
 	"flag"
 	"fmt"
+	"github.com/streadway/amqp"
+	"golang.org/x/net/context"
 	"io"
 	"os"
 	"os/signal"
 	"strings"
-
-	"golang.org/x/net/context"
 )
 
 var (
@@ -57,8 +57,9 @@ func read(r io.Reader) <-chan coelho.Message {
 		defer close(lines)
 		scan := bufio.NewScanner(r)
 		for scan.Scan() {
+			msg := amqp.Delivery{}
 			line := strings.Split(scan.Text(), " ")
-			lines <- coelho.Message{body(line), rk(line), nil}
+			lines <- coelho.Message{body(line), rk(line), msg}
 		}
 	}()
 	return lines

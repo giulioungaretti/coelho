@@ -52,7 +52,7 @@ func (r Rabbit) Subscribe(sessions chan Session, messages chan<- Message, ctx co
 			case messages <- Message{
 				Body: msg.Body,
 				Rk:   msg.RoutingKey,
-				Msg:  &msg,
+				Msg:  msg,
 			}:
 				// msg is not acked
 			case <-ctx.Done():

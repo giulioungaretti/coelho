@@ -14,7 +14,7 @@ import (
 type Message struct {
 	Body []byte
 	Rk   string
-	Msg  *amqp.Delivery
+	Msg  amqp.Delivery
 }
 
 // Session composes an amqp.Connection with an amqp.Channel
@@ -83,7 +83,7 @@ func DieGracefully(done context.CancelFunc) {
 	if r := recover(); r != nil {
 		log.Warnf("Recovered in  %v.", r)
 		done()
-		log.Info("Closing down")
+		log.Warnf("Closing down")
 	}
 }
 
