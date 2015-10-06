@@ -2,21 +2,23 @@
 package main
 
 import (
-	"bufio"
 	"coelho"
 	"coelho/env"
 	"flag"
 	"fmt"
+	log "github.com/Sirupsen/logrus"
+	"golang.org/x/net/context"
 	"io"
+	"math/rand"
 	"os"
 	"os/signal"
-
-	"golang.org/x/net/context"
+	"time"
 )
 
 var (
 	ctx  context.Context
 	done context.CancelFunc
+	read uint64 = 0
 )
 
 func init() {
@@ -38,30 +40,37 @@ func init() {
 
 }
 
-// read is this application's translation to the coelho.Message format, scanning from
-// stdin.
-func read(r io.Reader) <-chan coelho.Message {
-	lines := make(chan coelho.Message)
-	go func() {
-		defer close(lines)
-		scan := bufio.NewScanner(r)
-		for scan.Scan() {
-			lines <- coelho.Message(scan.Bytes())
-		}
-	}()
-	return lines
-}
-
 // write is this application's subscriber of application messages, printing to
 // stdout.
-func write(w io.Writer) chan<- coelho.Message {
-	lines := make(chan coelho.Message)
+func write(w io.Writer, lines chan coelho.Message, done context.CancelFunc) {
 	go func() {
-		for line := range lines {
-			fmt.Fprintln(w, string(line))
+		for {
+			select {
+			default:
+				a := rand.Intn(10000000)
+				if a == 100 {
+					line := <-lines
+					err := line.Msg.Reject(true)
+					if err != nil {
+						log.Errorf("Error: %v on ac", err)
+					}
+					log.Warn("send it back: %v", string(line.Rk))
+
+					continue
+				}
+			case line := <-lines:
+				err := line.Msg.Ack(false)
+				if err != nil {
+					log.Errorf("Error: %v on ac", err)
+				}
+				l := fmt.Sprintf("%v %v", line.Rk, string(line.Body))
+				fmt.Fprintln(w, l)
+			case <-ctx.Done():
+				break
+			}
 		}
+		done()
 	}()
-	return lines
 }
 
 func main() {
@@ -76,9 +85,20 @@ func main() {
 	r.Exclusive = e.Exclusive
 	r.NoWait = e.NoWait
 	flag.Parse()
+	lines := make(chan coelho.Message, 1000)
 	go func() {
-		r.Subscribe(r.Redial(ctx, e.RabbitMqAddres), write(os.Stdout), done)
+		for {
+			log.Infof("message buffer:%v, used:%v", cap(lines), len(lines))
+			//dev
+			time.Sleep(30 * time.Second)
+		}
+	}()
+	go func() {
+		for {
+			r.Subscribe(r.Redial(ctx, e.RabbitMqAddres), lines, ctx, done, &read)
+		}
 		done()
 	}()
+	write(os.Stdout, lines, done)
 	<-ctx.Done()
 }
