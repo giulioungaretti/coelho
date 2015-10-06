@@ -114,24 +114,26 @@ func (r Rabbit) Redial(ctx context.Context, url string) chan Session {
 				log.Info("shutting down Session factory")
 				return
 			}
-
 			conn, err := amqp.Dial(url)
 			if err != nil {
 				log.Warnf("Can't dial. Waiting 10 seconds...")
 				time.Sleep(10 * time.Second)
 				conn, err = amqp.Dial(url)
 				if err != nil {
-					log.Fatalf("cannot (re)dial: %v: %q", err, url)
+					log.Errorf("cannot (re)dial: %v: %q", err, url)
+					return
 				}
 			}
 
 			ch, err := conn.Channel()
 			if err != nil {
-				log.Fatalf("cannot create channel %v: %v", r.Exchange, err)
+				log.Errorf("cannot create channel %v: %v", r.Exchange, err)
+				return
 			}
 			// idempotent declaration
 			if err := r.DeclareExc(ch); err != nil {
-				log.Fatalf("cannot declare %v exchange: %v", r.ExchangeType, err)
+				log.Errorf("cannot declare %v exchange: %v", r.ExchangeType, err)
+				return
 			}
 
 			select {
