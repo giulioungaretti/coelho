@@ -48,8 +48,9 @@ func (r Rabbit) Subscribe(sessions chan Session, messages chan<- Message, ctx co
 				// channel it means  that the reciever is blocked so we just
 				// exit and avoid losing too much messages
 				log.Warnf("Timeout")
-				sub.Close()
-				return
+				// NOTE should i reject the message here ?
+				msg.Reject(true)
+				continue
 			case messages <- Message{
 				Body: msg.Body,
 				Rk:   msg.RoutingKey,
