@@ -52,16 +52,15 @@ func write(w io.Writer, lines chan coelho.Message, done context.CancelFunc) {
 					line := <-lines
 					err := line.Msg.Reject(true)
 					if err != nil {
-						log.Errorf("Error: %v on ac", err)
+						log.Errorf("Error on reject: %v", err)
 					}
 					log.Warn("send it back: %v", string(line.Rk))
-
 					continue
 				}
 			case line := <-lines:
 				err := line.Msg.Ack(false)
 				if err != nil {
-					log.Errorf("Error: %v on ac", err)
+					log.Errorf("Error on ack: %v", err)
 				}
 				l := fmt.Sprintf("%v %v", line.Rk, string(line.Body))
 				fmt.Fprintln(w, l)
