@@ -77,16 +77,6 @@ func (r Rabbit) DeclareQueue(ch *amqp.Channel) (amqp.Queue, error) {
 	return qd, err
 }
 
-// DieGracefully recovers from a panic, closes connections nicely
-// and  panics again.
-func DieGracefully(done context.CancelFunc) {
-	if r := recover(); r != nil {
-		log.Warnf("Recovered in  %v.", r)
-		done()
-		log.Warnf("Closing down")
-	}
-}
-
 // Close tears the connection down, taking the channel with it.
 func (s Session) Close() error {
 	if s.Connection == nil {
@@ -96,7 +86,8 @@ func (s Session) Close() error {
 }
 
 /*
- *Redial continually connects to the URL, exiting the program when no longer possible
+ *Redial continually connects to the URL, returns no longer possible
+ * no guarantee on the number of sessions returned on close.
  *==============
  *URL reference
  *amqp://user:pass@host:10000/vhost
