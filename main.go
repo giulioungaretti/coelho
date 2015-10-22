@@ -137,6 +137,5 @@ func (r Rabbit) Redial(ctx context.Context, url string) chan Session {
 			}
 		}
 	}()
-
 	return sessions
 }
