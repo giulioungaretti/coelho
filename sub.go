@@ -30,15 +30,15 @@ func (r Rabbit) Subscribe(sessions chan Session, messages chan<- Message, ctx co
 		}
 		autoAck := false
 		nowait := true
-		err := sub.Channel.Qos(
-			//TODO benchamrk
-			10,    // prefetch count
-			0,     // prefetch size
-			false) // global
-		if err != nil {
-			log.Errorf("Error setting Qos", err)
-			continue
-		}
+		//err := sub.Channel.Qos(
+		////TODO benchamrk
+		//10,    // prefetch count
+		//0,     // prefetch size
+		//false) // global
+		//if err != nil {
+		//log.Errorf("Error setting Qos", err)
+		//continue
+		//}
 		//Deliveries on the returned chan will be buffered indefinitely.  To limit memory
 		//of this buffer, use the Channel.Qos method to limit the amount of
 		//unacknowledged/buffered deliveries the server will deliver on this Channel.
@@ -51,7 +51,6 @@ func (r Rabbit) Subscribe(sessions chan Session, messages chan<- Message, ctx co
 		select {
 		default:
 			for msg := range deliveries {
-				atomic.AddUint64(counts, 1)
 				//this will never end because deliveries is closed
 				// only on connection/amqp-channel errors.
 				select {
@@ -69,6 +68,7 @@ func (r Rabbit) Subscribe(sessions chan Session, messages chan<- Message, ctx co
 					Msg:  msg,
 				}:
 					// msg is not acked
+					atomic.AddUint64(counts, 1)
 				case <-ctx.Done():
 					log.Infof("Closed session.")
 					sub.Close()
