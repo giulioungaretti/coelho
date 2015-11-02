@@ -30,15 +30,14 @@ func (r Rabbit) Subscribe(sessions chan Session, messages chan<- Message, ctx co
 		}
 		autoAck := false
 		nowait := true
-		//err := sub.Channel.Qos(
-		////TODO benchamrk
-		//10,    // prefetch count
-		//0,     // prefetch size
-		//false) // global
-		//if err != nil {
-		//log.Errorf("Error setting Qos", err)
-		//continue
-		//}
+		err := sub.Channel.Qos(
+			//TODO benchamrk
+			100,   // prefetch count
+			0,     // prefetch size
+			false) // global
+		if err != nil {
+			log.Errorf("Error setting Qos", err)
+		}
 		//Deliveries on the returned chan will be buffered indefinitely.  To limit memory
 		//of this buffer, use the Channel.Qos method to limit the amount of
 		//unacknowledged/buffered deliveries the server will deliver on this Channel.
