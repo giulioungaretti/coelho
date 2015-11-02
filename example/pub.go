@@ -3,16 +3,17 @@ package main
 
 import (
 	"bufio"
-	"coelho"
-	"coelho/env"
 	"flag"
 	"fmt"
-	"github.com/streadway/amqp"
-	"golang.org/x/net/context"
 	"io"
 	"os"
 	"os/signal"
 	"strings"
+
+	"github.com/giulioungaretti/coelho"
+	"github.com/giulioungaretti/coelho/env"
+	"github.com/streadway/amqp"
+	"golang.org/x/net/context"
 )
 
 var (

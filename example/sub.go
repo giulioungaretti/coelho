@@ -2,17 +2,18 @@
 package main
 
 import (
-	"coelho"
-	"coelho/env"
 	"flag"
 	"fmt"
-	log "github.com/Sirupsen/logrus"
-	"golang.org/x/net/context"
 	"io"
 	"math/rand"
 	"os"
 	"os/signal"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/giulioungaretti/coelho"
+	"github.com/giulioungaretti/coelho/env"
+	"golang.org/x/net/context"
 )
 
 var (
