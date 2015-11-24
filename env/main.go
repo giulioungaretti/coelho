@@ -13,13 +13,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-const (
-	CPU = 16
-)
-
 var (
-	rabbitMqAddres   string
-	CHOELO_MAX_CORES int
+	rabbitMqAddres string
+	choeloMaxCores int
 	// flags
 	logLevel  = flag.String("log_level", "debug", "pick log level (error|warn|debug)")
 	delete    = flag.Bool("delete", false, "make the queue delete")
@@ -31,6 +27,7 @@ var (
 	rk        = flag.String("rk", "#", "routing key to bind to")
 	exchType  = flag.String("tpye", "topic", "type of the exchange")
 	sendMode  = flag.Bool("send", true, "should run in send mode?")
+	qos       = flag.Int("QoS", 1, "Number of prefechted msssages to get from rabbitMQ")
 )
 
 func convStringToInt(s string) int {
@@ -70,15 +67,19 @@ func init() {
 		log.Fatalf("Logging error: %v", err)
 	}
 	log.SetLevel(level)
-	CHOELO_MAX_CORES = convStringToInt(os.Getenv("CHOELO_MAX_CORES"))
-	if CHOELO_MAX_CORES == 0 {
-		log.Infof("Using %v cores.", CPU)
-		CHOELO_MAX_CORES = CPU
+	cpus := convStringToInt(os.Getenv("cpus"))
+	if cpus == 0 {
+		cpus = runtime.NumCPU()
+		log.Infof("Using %v cores.", cpus)
 	}
-	runtime.GOMAXPROCS(CPU)
+	runtime.GOMAXPROCS(cpus)
 }
 
-type VARS struct {
+// Vars contains the enviroment variables we need
+// they can be changed by the user.
+// RabbitMqAddres  **must** be in the env, otherwise
+// choelo will exit with an error.
+type Vars struct {
 	Delete         bool // delete when usused
 	Durable        bool
 	Exchange       string
@@ -93,11 +94,12 @@ type VARS struct {
 	RabbitMqPwd    string
 	Send           bool
 	Receive        bool
+	QoS            int
 }
 
 // Init initializes the environment
-func Init() VARS {
-	v := &VARS{
+func Init() Vars {
+	v := &Vars{
 		Exchange:       *exch,
 		ExchangeType:   *exchType,
 		Name:           *name,
@@ -108,6 +110,7 @@ func Init() VARS {
 		NoWait:         *nowait,
 		RabbitMqAddres: rabbitMqAddres,
 		Send:           *sendMode,
+		QoS:            *qos,
 	}
 	return *v
 }
