@@ -1,11 +1,11 @@
 // +build ignore
+
 package main
 
 import (
 	"flag"
 	"fmt"
 	"io"
-	"math/rand"
 	"os"
 	"os/signal"
 	"time"
@@ -19,7 +19,7 @@ import (
 var (
 	ctx  context.Context
 	done context.CancelFunc
-	read uint64 = 0
+	read uint64
 )
 
 func init() {
@@ -43,49 +43,52 @@ func init() {
 
 // write is this application's subscriber of application messages, printing to
 // stdout.
-func write(w io.Writer, lines chan coelho.Message, done context.CancelFunc) {
+func bunch(lines chan coelho.Message, done context.CancelFunc) (bufferCh chan []coelho.Message) {
+	bufferCh = make(chan []coelho.Message, 3)
 	go func() {
+		buffer := make([]coelho.Message, cap(lines)/2)
+		i := 0
 		for {
 			select {
-			default:
-				a := rand.Intn(10000000)
-				if a == 100 {
-					line := <-lines
-					err := line.Msg.Reject(true)
-					if err != nil {
-						log.Errorf("Error on reject: %v", err)
-					}
-					log.Warn("send it back: %v", string(line.Rk))
-					continue
-				}
 			case line := <-lines:
-				err := line.Msg.Ack(false)
-				if err != nil {
-					log.Errorf("Error on ack: %v", err)
-				}
-				l := fmt.Sprintf("%v %v", line.Rk, string(line.Body))
-				fmt.Fprintln(w, l)
+				buffer[i] = line
+				i++
 			case <-ctx.Done():
 				break
 			}
+			// buffer full ack them all and send bunch
+			if i == cap(lines)/2 {
+				last := buffer[i-1]
+				err := last.Msg.Ack(true)
+				i = 0
+				if err != nil {
+					log.Errorf("Error on ack: %v", err)
+				}
+
+				bufferCh <- buffer
+			}
 		}
-		done()
 	}()
+	return bufferCh
 }
 
-func main() {
-	e := env.Init()
-	r := coelho.Rabbit{}
-	r.Exchange = e.Exchange
-	r.ExchangeType = e.ExchangeType
-	r.Name = e.Name
-	r.RK = e.RK
-	r.Durable = e.Durable
-	r.Delete = e.Delete
-	r.Exclusive = e.Exclusive
-	r.NoWait = e.NoWait
-	flag.Parse()
-	lines := make(chan coelho.Message, 1000)
+func write(w io.Writer, end string, ch chan []coelho.Message) {
+loop:
+	for {
+		select {
+		default:
+			continue loop
+		case _ = <-ch:
+			continue
+		}
+	}
+}
+
+func dispatch(e env.Vars, r coelho.Rabbit, rk string) {
+	lines := make(chan coelho.Message, r.QoS)
+	// set the right routing key
+	r.RK = rk
+	// monitor
 	go func() {
 		for {
 			log.Infof("message buffer:%v, used:%v", cap(lines), len(lines))
@@ -93,12 +96,32 @@ func main() {
 			time.Sleep(30 * time.Second)
 		}
 	}()
+	// Subscribe
 	go func() {
 		for {
-			r.Subscribe(r.Redial(ctx, e.RabbitMqAddres), lines, ctx, done, &read)
+			r.Subscribe(ctx, r.Redial(ctx, e.RabbitMqAddres), lines, rk, &read)
 		}
 		done()
 	}()
-	write(os.Stdout, lines, done)
+	// process
+	linesCh := bunch(lines, done)
+	go write(os.Stdout, rk, linesCh)
+	<-ctx.Done()
+}
+
+func main() {
+	e := env.Init()
+	r := coelho.Rabbit{}
+	r.Exchange = e.Exchange
+	r.ExchangeType = e.ExchangeType
+	r.Durable = e.Durable
+	r.RK = e.RK
+	r.Delete = e.Delete
+	r.Exclusive = e.Exclusive
+	r.NoWait = e.NoWait
+	r.QoS = 100
+	flag.Parse()
+	go dispatch(e, r, "offer.click")
+	go dispatch(e, r, "catalog.view")
 	<-ctx.Done()
 }

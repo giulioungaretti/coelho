@@ -1,4 +1,5 @@
 // +build ignore
+
 package main
 
 import (
@@ -91,7 +92,7 @@ func main() {
 	r.NoWait = e.NoWait
 	flag.Parse()
 	go func() {
-		r.Publish(r.Redial(ctx, e.RabbitMqAddres), read(os.Stdin), done)
+		r.Publish(ctx, r.Redial(ctx, e.RabbitMqAddres), read(os.Stdin), "all")
 		done()
 	}()
 
