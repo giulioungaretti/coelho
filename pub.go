@@ -9,7 +9,8 @@ import (
 // Publish publishes messages to a reconnecting Session to a n exchange.
 // It receives from the application specific source of messages.
 // Keeps a pending channel in case of small timeouts.
-func (r Rabbit) Publish(sessions chan Session, messages <-chan Message, done context.CancelFunc) {
+// If the queues are not declared messages go in the rabbit-hole.
+func (r Rabbit) Publish(ctx context.Context, sessions chan Session, messages <-chan Message, queueName string) {
 	var (
 		running bool
 		reading = messages
@@ -17,14 +18,6 @@ func (r Rabbit) Publish(sessions chan Session, messages <-chan Message, done con
 	)
 
 	for pub := range sessions {
-		if _, err := r.DeclareQueue(pub.Channel); err != nil {
-			log.Errorf("cannot consume from exclusive queue: %q, %v", r.Name, err)
-			return
-		}
-		if err := r.Bind(pub.Channel); err != nil {
-			log.Errorf("cannot consume without a binding to exchange: %+v, %v", r, err)
-			continue
-		}
 		log.Infof("[x] publishing")
 		for {
 			var msg Message
@@ -51,6 +44,8 @@ func (r Rabbit) Publish(sessions chan Session, messages <-chan Message, done con
 				// work on pending delivery until ack'd
 				pending <- msg
 				reading = nil
+			case <-ctx.Done():
+				return
 			}
 		}
 	}
