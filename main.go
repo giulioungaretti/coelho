@@ -1,13 +1,14 @@
-// package coelho offers  pub/sub functions to send/recieve messages from rabbitMQ.
+// Package coelho offers  pub/sub functions to send/recieve messages from rabbitMQ.
 // The idea is to have a simple exported Subscribe and Publish functions.
 // Sub
 package coelho
 
 import (
+	"time"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/streadway/amqp"
 	"golang.org/x/net/context"
-	"time"
 )
 
 // Message mirrors a rabbitMQ message
@@ -35,6 +36,7 @@ type Rabbit struct {
 	Name         string
 	NoWait       bool
 	RK           string
+	QoS          int
 }
 
 // DeclareExc decleares an exchange with false auto-delete, and false internal flags.
@@ -52,11 +54,11 @@ func (r Rabbit) DeclareExc(ch *amqp.Channel) error {
 }
 
 // Bind the queue to an exchange
-func (r Rabbit) Bind(ch *amqp.Channel) error {
+func (r Rabbit) Bind(ch *amqp.Channel, queueName string) error {
 	log.Infof("Binding queue %s to exchange %s with routing key %s with %s exchange ",
-		r.Name, r.Exchange, r.RK, r.ExchangeType)
+		queueName, r.Exchange, r.RK, r.ExchangeType)
 	err := ch.QueueBind(
-		r.Name,
+		queueName,
 		r.RK,
 		r.Exchange,
 		r.NoWait,
@@ -65,9 +67,9 @@ func (r Rabbit) Bind(ch *amqp.Channel) error {
 }
 
 // DeclareQueue returns a decleared queue
-func (r Rabbit) DeclareQueue(ch *amqp.Channel) (amqp.Queue, error) {
+func (r Rabbit) DeclareQueue(ch *amqp.Channel, queueName string) (amqp.Queue, error) {
 	qd, err := ch.QueueDeclare(
-		r.Name,
+		queueName,
 		r.Durable,
 		r.Delete,
 		r.Exclusive,
@@ -85,8 +87,7 @@ func (s Session) Close() error {
 	return s.Connection.Close()
 }
 
-/*
- *Redial continually connects to the URL, returns no longer possible
+/*Redial continually connects to the URL, returns no longer possible
  * no guarantee on the number of sessions returned on close.
  *==============
  *URL reference
