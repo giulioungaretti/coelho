@@ -5,6 +5,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/streadway/amqp"
 	"golang.org/x/net/context"
 )
 
@@ -13,37 +14,37 @@ import (
 //******** NOTE that mesasges are not acked.**************
 // it's the client responsability  to ack the message.
 //Handles shutting down gracefully in case of sig-int. Or disconnects.
-func (r Rabbit) Subscribe(sessions chan Session, messages chan<- Message, ctx context.Context, counts *uint64) {
-	queue := r.Name
+func (r Rabbit) Subscribe(ctx context.Context, sessions chan Session, messages chan<- Message, queueName string, counts *uint64) {
 	// subscribe forever
 	for sub := range sessions {
 		// declaere quque
-		if _, err := r.DeclareQueue(sub.Channel); err != nil {
-			log.Errorf("cannot consume from queue: %q, %v", queue, err)
+		var q amqp.Queue
+		var err error
+		if q, err = r.DeclareQueue(sub.Channel, queueName); err != nil {
+			log.Errorf("cannot consume from queue: %q. Error: %v", queueName, err)
 			// try again
 			continue
 		}
-
-		if err := r.Bind(sub.Channel); err != nil {
-			log.Errorf("cannot consume without a binding to exchange: %+v, %v", r, err)
+		if err := r.Bind(sub.Channel, q.Name); err != nil {
+			log.Errorf("cannot consume without a binding to exchange: %+v. Erorr: %v", r, err)
 			continue
 		}
 		autoAck := false
 		nowait := true
-		err := sub.Channel.Qos(
+		err = sub.Channel.Qos(
 			//TODO benchamrk
-			100,   // prefetch count
+			r.QoS, // prefetch count
 			0,     // prefetch size
 			false) // global
 		if err != nil {
-			log.Errorf("Error setting Qos", err)
+			log.Errorf("Error setting Qos %v", err)
 		}
 		//Deliveries on the returned chan will be buffered indefinitely.  To limit memory
 		//of this buffer, use the Channel.Qos method to limit the amount of
 		//unacknowledged/buffered deliveries the server will deliver on this Channel.
-		deliveries, err := sub.Consume(queue, "", autoAck, false, false, nowait, nil)
+		deliveries, err := sub.Consume(q.Name, "", autoAck, false, false, nowait, nil)
 		if err != nil {
-			log.Errorf("cannot consume from: %q, %v", queue, err)
+			log.Errorf("cannot consume from: %q, %v", q.Name, err)
 			// try again
 			continue
 		}
@@ -54,12 +55,13 @@ func (r Rabbit) Subscribe(sessions chan Session, messages chan<- Message, ctx co
 				// only on connection/amqp-channel errors.
 				select {
 				case <-time.After(1 * time.Second):
-					// if we wait more than 10 * Millisecond to send trhough the
+					// if we wait more than 1 * Second to send trhough the
 					// channel it means  that the reciever is blocked so we just
 					// exit and avoid losing too much messages
 					log.Warnf("Timeout")
-					// NOTE should i reject the message here ?
-					msg.Reject(true)
+					mutliple := true
+					requeue := true
+					msg.Nack(mutliple, requeue)
 					continue
 				case messages <- Message{
 					Body: msg.Body,
