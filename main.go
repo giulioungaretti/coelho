@@ -51,12 +51,12 @@ func (r Rabbit) DeclareExc(ch *amqp.Channel) error {
 }
 
 // Bind the queue to an exchange
-func (r Rabbit) Bind(ch *amqp.Channel, queueName string) error {
+func (r Rabbit) Bind(ch *amqp.Channel, queueName string, rk string) error {
 	log.Infof("Binding queue %s to exchange %s with routing key %s with %s exchange ",
-		queueName, r.Exchange, r.RK, r.ExchangeType)
+		queueName, r.Exchange, rk, r.ExchangeType)
 	err := ch.QueueBind(
 		queueName,
-		r.RK,
+		rk,
 		r.Exchange,
 		r.NoWait,
 		r.Arguments)

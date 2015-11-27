@@ -25,24 +25,12 @@ func (r Rabbit) Subscribe(ctx context.Context, sessions chan Session, messages c
 			// try again
 			continue
 		}
-		if err := r.Bind(sub.Channel, q.Name); err != nil {
+		if err := r.Bind(sub.Channel, q.Name, q.Name); err != nil {
 			log.Errorf("cannot consume without a binding to exchange: %+v. Erorr: %v", r, err)
 			continue
 		}
 		autoAck := false
-		nowait := true
-		err = sub.Channel.Qos(
-			//TODO benchamrk
-			r.QoS, // prefetch count
-			0,     // prefetch size
-			false) // global
-		if err != nil {
-			log.Errorf("Error setting Qos %v", err)
-		}
-		//Deliveries on the returned chan will be buffered indefinitely.  To limit memory
-		//of this buffer, use the Channel.Qos method to limit the amount of
-		//unacknowledged/buffered deliveries the server will deliver on this Channel.
-		deliveries, err := sub.Consume(q.Name, "", autoAck, false, false, nowait, nil)
+		deliveries, err := sub.Consume(q.Name, "", autoAck, false, true, false, nil)
 		if err != nil {
 			log.Errorf("cannot consume from: %q, %v", q.Name, err)
 			// try again
