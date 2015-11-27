@@ -84,8 +84,6 @@ func main() {
 	r := coelho.Rabbit{}
 	r.Exchange = e.Exchange
 	r.ExchangeType = e.ExchangeType
-	r.Name = e.Name
-	r.RK = e.RK
 	r.Durable = e.Durable
 	r.Delete = e.Delete
 	r.Exclusive = e.Exclusive

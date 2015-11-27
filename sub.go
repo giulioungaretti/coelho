@@ -39,11 +39,14 @@ func (r Rabbit) Subscribe(ctx context.Context, sessions chan Session, messages c
 		select {
 		default:
 			for msg := range deliveries {
+				//TODO  this can be used already to bunch up the results.
+				// sending a []amqp.delivery instead of a single deveivery
+
 				//this will never end because deliveries is closed
 				// only on connection/amqp-channel errors.
 				select {
 				case <-time.After(1 * time.Second):
-					// if we wait more than 1 * Second to send trhough the
+					// if we wait more than 1 * Second to send thorough the
 					// channel it means  that the reciever is blocked so we just
 					// exit and avoid losing too much messages
 					log.Warnf("Timeout")
@@ -51,6 +54,8 @@ func (r Rabbit) Subscribe(ctx context.Context, sessions chan Session, messages c
 					requeue := true
 					msg.Nack(mutliple, requeue)
 					continue
+				// TODO WTF ? this strcut contains way too much redundant information
+				// you idiot
 				case messages <- Message{
 					Body: msg.Body,
 					Rk:   msg.RoutingKey,
