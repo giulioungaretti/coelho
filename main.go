@@ -32,10 +32,7 @@ type Rabbit struct {
 	Exchange     string
 	ExchangeType string
 	Exclusive    bool
-	Knows        bool
-	Name         string
 	NoWait       bool
-	RK           string
 	QoS          int
 }
 

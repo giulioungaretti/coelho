@@ -19,15 +19,13 @@ var (
 	// flags
 	logLevel  = flag.String("log_level", "debug", "pick log level (error|warn|debug)")
 	delete    = flag.Bool("delete", false, "make the queue delete")
-	durable   = flag.Bool("durable", true, "make the queue durable")
+	durable   = flag.Bool("durable", false, "make the queue durable")
 	exch      = flag.String("exchange", "events", "name of the rabbit exchange")
 	exclusive = flag.Bool("exclusive", false, "make the queue exclusive")
-	name      = flag.String("name", "events", "name of rabbit queue")
 	nowait    = flag.Bool("nowait", false, "make the queue nowait")
-	rk        = flag.String("rk", "#", "routing key to bind to")
-	exchType  = flag.String("tpye", "topic", "type of the exchange")
+	exchType  = flag.String("tpye", "direct", "type of the exchange")
 	sendMode  = flag.Bool("send", true, "should run in send mode?")
-	qos       = flag.Int("QoS", 1, "Number of prefechted msssages to get from rabbitMQ")
+	qos       = flag.Int("QoS", 100, "Number of prefechted msssages to get from rabbitMQ")
 )
 
 func convStringToInt(s string) int {
@@ -102,8 +100,6 @@ func Init() Vars {
 	v := &Vars{
 		Exchange:       *exch,
 		ExchangeType:   *exchType,
-		Name:           *name,
-		RK:             *rk,
 		Durable:        *durable,
 		Delete:         *delete,
 		Exclusive:      *exclusive,
