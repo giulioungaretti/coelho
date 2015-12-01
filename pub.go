@@ -6,7 +6,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Publish publishes messages to a reconnecting Session to a n exchange.
+// Publish publishes messages to a reconnecting Session to an exchange.
 // It receives from the application specific source of messages.
 // Keeps a pending channel in case of small timeouts.
 // If the queues are not declared messages go in the rabbit-hole.
@@ -35,7 +35,6 @@ func (r Rabbit) Publish(ctx context.Context, sessions chan Session, messages <-c
 					pub.Close()
 					break
 				}
-
 			case msg, running = <-reading:
 				// all messages consumed
 				if !running {
