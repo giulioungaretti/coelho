@@ -13,6 +13,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/giulioungaretti/coelho"
 	"github.com/giulioungaretti/coelho/env"
+	"github.com/streadway/amqp"
 	"golang.org/x/net/context"
 )
 
@@ -41,53 +42,22 @@ func init() {
 
 }
 
-// write is this application's subscriber of application messages, printing to
-// stdout.
-func bunch(lines chan coelho.Message, done context.CancelFunc) (bufferCh chan []coelho.Message) {
-	bufferCh = make(chan []coelho.Message, 3)
-	go func() {
-		buffer := make([]coelho.Message, cap(lines)/2)
-		i := 0
-		for {
-			select {
-			case line := <-lines:
-				buffer[i] = line
-				i++
-			case <-ctx.Done():
-				break
-			}
-			// buffer full ack them all and send bunch
-			if i == cap(lines)/2 {
-				last := buffer[i-1]
-				err := last.Msg.Ack(true)
-				i = 0
-				if err != nil {
-					log.Errorf("Error on ack: %v", err)
-				}
-
-				bufferCh <- buffer
-			}
-		}
-	}()
-	return bufferCh
-}
-
-func write(w io.Writer, end string, ch chan []coelho.Message) {
+// ack acks all the messages of teh bunch.
+func ack(w io.Writer, ch chan []amqp.Delivery) {
 loop:
 	for {
 		select {
 		default:
 			continue loop
-		case _ = <-ch:
-			continue
+		case bunch := <-ch:
+			bunch[len(bunch)-1].Ack(true)
 		}
 	}
 }
 
 func dispatch(e env.Vars, r coelho.Rabbit, rk string) {
-	lines := make(chan coelho.Message, r.QoS)
+	lines := make(chan amqp.Delivery, r.QoS)
 	// set the right routing key
-	r.RK = rk
 	// monitor
 	go func() {
 		for {
@@ -104,8 +74,8 @@ func dispatch(e env.Vars, r coelho.Rabbit, rk string) {
 		done()
 	}()
 	// process
-	linesCh := bunch(lines, done)
-	go write(os.Stdout, rk, linesCh)
+	bunchedLines := coelho.Bunch(ctx, lines, 100, 100)
+	go ack(os.Stdout, bunchedLines)
 	<-ctx.Done()
 }
 
@@ -115,7 +85,6 @@ func main() {
 	r.Exchange = e.Exchange
 	r.ExchangeType = e.ExchangeType
 	r.Durable = e.Durable
-	r.RK = e.RK
 	r.Delete = e.Delete
 	r.Exclusive = e.Exclusive
 	r.NoWait = e.NoWait

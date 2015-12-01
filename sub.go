@@ -66,3 +66,32 @@ func (r Rabbit) Subscribe(ctx context.Context, sessions chan Session, messages c
 		}
 	}
 }
+
+// Bunch goes through a channel containing amqp deliveries and bunches them up in arrays of size
+// bunchLen and then forwards onto a channel with a buffer chanBuf.
+// Bunch never stops sending unless the context done channel is closed.
+func Bunch(ctx context.Context, messages chan amqp.Delivery, bunchLen, chanBuff int) (bufferCh chan []amqp.Delivery) {
+	bufferCh = make(chan []amqp.Delivery, chanBuff)
+	// cap messages is 2 * qos
+	go func() {
+		var buffer []amqp.Delivery
+		i := 0
+	loop:
+		for {
+			select {
+			case msg := <-messages:
+				buffer = append(buffer, msg)
+				i++
+			case <-ctx.Done():
+				break loop
+			default:
+			}
+			if i == bunchLen {
+				bufferCh <- buffer
+				buffer = make([]amqp.Delivery, 0)
+				i = 0
+			}
+		}
+	}()
+	return bufferCh
+}
