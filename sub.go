@@ -29,8 +29,7 @@ func (r Rabbit) Subscribe(ctx context.Context, sessions chan Session, messages c
 			log.Errorf("cannot consume without a binding to exchange: %+v. Erorr: %v", r, err)
 			continue
 		}
-		autoAck := false
-		deliveries, err := sub.Consume(q.Name, "", autoAck, false, true, false, nil)
+		deliveries, err := sub.Consume(q.Name, "", r.AutoAck, r.Exclusive, false, r.NoWait, nil)
 		if err != nil {
 			log.Errorf("cannot consume from: %q, %v", q.Name, err)
 			// try again
@@ -50,8 +49,8 @@ func (r Rabbit) Subscribe(ctx context.Context, sessions chan Session, messages c
 					mutliple := true
 					requeue := true
 					msg.Nack(mutliple, requeue)
-					time.Sleep(1 * time.Second)
-					continue
+					time.Sleep(3 * time.Second)
+					log.Warnf("end Timeout")
 				case messages <- msg:
 					atomic.AddUint64(counts, 1)
 				case <-ctx.Done():
