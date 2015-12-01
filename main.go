@@ -32,6 +32,7 @@ type Rabbit struct {
 	Exchange     string
 	ExchangeType string
 	Exclusive    bool
+	Internal     bool
 	NoWait       bool
 	QoS          int
 }
@@ -42,8 +43,8 @@ func (r Rabbit) DeclareExc(ch *amqp.Channel) error {
 		r.Exchange,     // name
 		r.ExchangeType, // type
 		r.Durable,      // durable
-		false,          // auto-deleted
-		false,          // internal
+		r.Delete,       // auto-deleted
+		r.Internal,     // internal
 		r.NoWait,       // no-wait
 		r.Arguments,    // arguments
 	)
@@ -101,7 +102,7 @@ func (r Rabbit) Redial(ctx context.Context, url string) chan Session {
 			default:
 				log.Info("Dialing")
 			case <-ctx.Done():
-				log.Info("shutting down Session factory")
+				log.Infof("Shutting down session factory")
 				return
 			}
 			conn, err := amqp.Dial(url)
@@ -137,9 +138,9 @@ func (r Rabbit) Redial(ctx context.Context, url string) chan Session {
 			select {
 			// this will block here if the subscriber is not using the session
 			case sessions <- Session{conn, ch}:
-				log.Info("New session init.")
+				log.Info("New session has been initialized.")
 			case <-ctx.Done():
-				log.Infof("shutting down new Session")
+				log.Infof("Shutting down session")
 				return
 			}
 		}
