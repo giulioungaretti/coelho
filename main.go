@@ -27,6 +27,7 @@ type Session struct {
 // Rabbit holds the details of the Con, Ch
 type Rabbit struct {
 	Arguments    map[string]interface{}
+	AutoAck      bool
 	Delete       bool // delete when usused
 	Durable      bool
 	Exchange     string
