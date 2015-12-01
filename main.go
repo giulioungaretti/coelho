@@ -85,10 +85,11 @@ func (s Session) Close() error {
 }
 
 /*Redial continually connects to the URL, returns no longer possible
- * no guarantee on the number of sessions returned on close.
+ *no guarantee on the number of sessions returned on close.
  *==============
  *URL reference
- *amqp://user:pass@host:10000/vhost
+ *amqp://user:pass@host:port/vhost
+ *a different URL-structure will not work
  *==============
  */
 func (r Rabbit) Redial(ctx context.Context, url string) chan Session {
@@ -113,7 +114,6 @@ func (r Rabbit) Redial(ctx context.Context, url string) chan Session {
 					return
 				}
 			}
-
 			ch, err := conn.Channel()
 			if err != nil {
 				log.Errorf("cannot create channel %v: %v", r.Exchange, err)
@@ -124,17 +124,16 @@ func (r Rabbit) Redial(ctx context.Context, url string) chan Session {
 				log.Errorf("cannot declare %v exchange: %v", r.ExchangeType, err)
 				return
 			}
-			//TODO benchamrk
 			//Deliveries on the returned chan will be buffered indefinitely.  To limit memory
 			//of this buffer, use the Channel.Qos method to limit the amount of
 			//unacknowledged/buffered deliveries the server will deliver on this Channel.
-			//err = ch.Qos(
-			//r.QoS, // prefetch count
-			//0,     // prefetch size
-			//false) // global
-			//if err != nil {
-			//log.Errorf("Error setting Qos %v", err)
-			//}
+			err = ch.Qos(
+				r.QoS, // prefetch count
+				0,     // prefetch size
+				false) // global
+			if err != nil {
+				log.Errorf("Error setting Qos %v", err)
+			}
 			select {
 			// this will block here if the subscriber is not using the session
 			case sessions <- Session{conn, ch}:
