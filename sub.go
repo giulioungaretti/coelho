@@ -72,10 +72,10 @@ func (r Rabbit) Subscribe(ctx context.Context, sessions chan Session, messages c
 // Bunch never stops sending unless the context done channel is closed.
 func Bunch(ctx context.Context, messages chan amqp.Delivery, bunchLen, chanBuff int) (bufferCh chan []amqp.Delivery) {
 	bufferCh = make(chan []amqp.Delivery, chanBuff)
-	// cap messages is 2 * qos
 	go func() {
 		var buffer []amqp.Delivery
 		i := 0
+		t0 := time.Now()
 	loop:
 		for {
 			select {
@@ -90,6 +90,14 @@ func Bunch(ctx context.Context, messages chan amqp.Delivery, bunchLen, chanBuff 
 				bufferCh <- buffer
 				buffer = make([]amqp.Delivery, 0)
 				i = 0
+				t0 = time.Now()
+			}
+			// clear messages after 120 seconds of inactivity
+			if time.Since(t0).Seconds() > 120 {
+				bufferCh <- buffer
+				buffer = make([]amqp.Delivery, 0)
+				i = 0
+				t0 = time.Now()
 			}
 		}
 	}()
