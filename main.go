@@ -35,11 +35,24 @@ type Rabbit struct {
 	Exclusive    bool
 	Internal     bool
 	NoWait       bool
+	Passive      bool
 	QoS          int
 }
 
 // DeclareExc decleares an exchange with false auto-delete, and false internal flags.
 func (r Rabbit) DeclareExc(ch *amqp.Channel) error {
+	if r.Passive {
+		err := ch.ExchangeDeclarePassive(
+			r.Exchange,     // name
+			r.ExchangeType, // type
+			r.Durable,      // durable
+			r.Delete,       // auto-deleted
+			r.Internal,     // internal
+			r.NoWait,       // no-wait
+			r.Arguments,    // arguments
+		)
+		return err
+	}
 	err := ch.ExchangeDeclare(
 		r.Exchange,     // name
 		r.ExchangeType, // type
