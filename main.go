@@ -142,12 +142,14 @@ func (r Rabbit) Redial(ctx context.Context, url string) chan Session {
 			//Deliveries on the returned chan will be buffered indefinitely.  To limit memory
 			//of this buffer, use the Channel.Qos method to limit the amount of
 			//unacknowledged/buffered deliveries the server will deliver on this Channel.
-			err = ch.Qos(
-				r.QoS, // prefetch count
-				0,     // prefetch size
-				false) // global
-			if err != nil {
-				log.Errorf("Error setting Qos %v", err)
+			if r.QoS != 0 {
+				err = ch.Qos(
+					r.QoS, // prefetch count
+					0,     // prefetch size
+					false) // global
+				if err != nil {
+					log.Errorf("Error setting Qos %v", err)
+				}
 			}
 			select {
 			// this will block here if the subscriber is not using the session
