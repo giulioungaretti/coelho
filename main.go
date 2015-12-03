@@ -26,6 +26,7 @@ type Session struct {
 
 // Rabbit holds the details of the Con, Ch
 type Rabbit struct {
+	Address      string
 	Arguments    map[string]interface{}
 	AutoAck      bool
 	Delete       bool // delete when usused
