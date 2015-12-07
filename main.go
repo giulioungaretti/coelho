@@ -123,12 +123,13 @@ func (s Session) Close() error {
  */
 func (r Rabbit) Redial(ctx context.Context, url string) chan Session {
 	sessions := make(chan Session)
+	count := 0
 	go func() {
 		defer close(sessions)
 		for {
 			select {
 			default:
-				log.Info("Dialing")
+				log.Infof("Dialing..Call no:%v", count)
 			case <-ctx.Done():
 				log.Infof("Shutting down session factory")
 				return
@@ -165,6 +166,7 @@ func (r Rabbit) Redial(ctx context.Context, url string) chan Session {
 					log.Errorf("Error setting Qos %v", err)
 				}
 			}
+			count++
 			select {
 			// this will block here if the subscriber is not using the session
 			case sessions <- Session{conn, ch}:
