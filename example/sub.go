@@ -11,6 +11,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/codegangsta/cli"
 	"github.com/giulioungaretti/coelho"
 	"github.com/giulioungaretti/coelho/env"
 	"github.com/streadway/amqp"
@@ -79,7 +80,7 @@ func dispatch(e env.Vars, r coelho.Rabbit, rk string) {
 	<-ctx.Done()
 }
 
-func main() {
+func sub(ctx context.Context, c *cli.Context, queue []string) {
 	e := env.Init()
 	r := coelho.Rabbit{}
 	r.Exchange = e.Exchange
@@ -90,7 +91,18 @@ func main() {
 	r.NoWait = e.NoWait
 	r.QoS = 100
 	flag.Parse()
-	go dispatch(e, r, "offer.click")
-	go dispatch(e, r, "catalog.view")
+	for _, queue := range queues {
+		dispatch(e, r, queue)
+	}
 	<-ctx.Done()
+}
+
+func main() {
+	app := cli.NewApp()
+	app.Name = "Subscribe"
+	app.Version = "0.1"
+	app.Usage = "Read msg from queues specified in the arguments, close with ^c"
+	app.Action = func(c *cli.Context) {
+	}
+	app.Run(os.Args)
 }

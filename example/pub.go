@@ -1,5 +1,3 @@
-// +build ignore
-
 package main
 
 import (
@@ -10,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync/atomic"
 
 	"github.com/giulioungaretti/coelho"
 	"github.com/giulioungaretti/coelho/env"
@@ -18,8 +17,9 @@ import (
 )
 
 var (
-	ctx  context.Context
-	done context.CancelFunc
+	ctx    context.Context
+	done   context.CancelFunc
+	counts uint64
 )
 
 func init() {
@@ -53,15 +53,23 @@ func rk(line []string) string {
 
 // read is this application's translation to the coelho.Message format, scanning from
 // stdin.
-func read(r io.Reader) <-chan coelho.Message {
-	lines := make(chan coelho.Message)
+func read(r io.Reader) chan []amqp.Delivery {
+	lines := make(chan []amqp.Delivery)
 	go func() {
 		defer close(lines)
 		scan := bufio.NewScanner(r)
+		var buffer []amqp.Delivery
+		i := 0
 		for scan.Scan() {
-			msg := amqp.Delivery{}
 			line := strings.Split(scan.Text(), " ")
-			lines <- coelho.Message{body(line), rk(line), msg}
+			msg := amqp.Delivery{Body: body(line), RoutingKey: rk(line)}
+			buffer = append(buffer, msg)
+			i++
+			if i == 200 {
+				lines <- buffer
+				buffer = make([]amqp.Delivery, 0)
+				i = 0
+			}
 		}
 	}()
 	return lines
@@ -69,8 +77,8 @@ func read(r io.Reader) <-chan coelho.Message {
 
 // write is this application's subscriber of application messages, printing to
 // stdout.
-func write(w io.Writer) chan<- coelho.Message {
-	messages := make(chan coelho.Message)
+func write(w io.Writer) chan amqp.Delivery {
+	messages := make(chan amqp.Delivery)
 	go func() {
 		for msg := range messages {
 			fmt.Fprintln(w, string(msg.Body))
@@ -90,9 +98,10 @@ func main() {
 	r.NoWait = e.NoWait
 	flag.Parse()
 	go func() {
-		r.Publish(ctx, r.Redial(ctx, e.RabbitMqAddres), read(os.Stdin), "all")
+		r.Publish(ctx, r.Redial(ctx, e.RabbitMqAddres), read(os.Stdin), &counts)
 		done()
 	}()
-
 	<-ctx.Done()
+	cc := atomic.LoadUint64(&counts)
+	fmt.Printf("%v sendt\n", cc)
 }
