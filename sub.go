@@ -41,16 +41,16 @@ func (r Rabbit) Subscribe(ctx context.Context, sessions chan Session, messages c
 				//this will never end because deliveries is closed
 				// only on connection/amqp-channel errors.
 				select {
-				case <-time.After(1 * time.Second):
+				case <-time.After(10 * time.Second):
 					// if we wait more than 1 * Second to send thorough the
 					// channel it means  that the reciever is blocked so we just
 					// wait a bit  and avoid losing too much messages
-					log.Warnf("Timeout")
-					mutliple := true
+					log.Warnf("Timeout--> sleeping")
+					mutliple := false
 					requeue := true
 					msg.Nack(mutliple, requeue)
 					time.Sleep(3 * time.Second)
-					log.Warnf("end Timeout")
+					log.Warnf("----> end Timeout")
 				case messages <- msg:
 					atomic.AddUint64(counts, 1)
 				case <-ctx.Done():
@@ -94,10 +94,12 @@ func Bunch(ctx context.Context, messages chan amqp.Delivery, bunchLen, chanBuff 
 			}
 			// clear messages after 120 seconds of inactivity
 			if time.Since(t0).Seconds() > 120 {
-				bufferCh <- buffer
-				buffer = make([]amqp.Delivery, 0)
-				i = 0
-				t0 = time.Now()
+				if len(buffer) > 0 {
+					bufferCh <- buffer
+					buffer = make([]amqp.Delivery, 0)
+					i = 0
+					t0 = time.Now()
+				}
 			}
 		}
 	}()
