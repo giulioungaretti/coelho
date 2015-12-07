@@ -85,6 +85,26 @@ func (r Rabbit) DeclareQueue(ch *amqp.Channel, queueName string) (amqp.Queue, er
 	return qd, err
 }
 
+//CheckQueue tries to declare and thus checks if  a queue
+// exists and is bound to channel.
+func CheckQueue(r Rabbit, queueName string) {
+	ctx, done := context.WithCancel(context.Background())
+	ss := r.Redial(ctx, r.Address)
+	s := <-ss
+	var q amqp.Queue
+	var err error
+	if q, err = r.DeclareQueue(s.Channel, queueName); err != nil {
+		log.Errorf("cannot consume from queue: %q. Error: %v", queueName, err)
+		return
+	}
+	if err := r.Bind(s.Channel, q.Name, q.Name); err != nil {
+		log.Errorf("cannot consume without a binding to exchange: %+v. Erorr: %v", r, err)
+		return
+	}
+
+	done()
+}
+
 // Close tears the connection down, taking the channel with it.
 func (s Session) Close() error {
 	if s.Connection == nil {
