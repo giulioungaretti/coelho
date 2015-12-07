@@ -11,13 +11,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-// Message mirrors a rabbitMQ message
-type Message struct {
-	Body []byte
-	Rk   string
-	Msg  amqp.Delivery
-}
-
 // Session composes an amqp.Connection with an amqp.Channel
 type Session struct {
 	*amqp.Connection
