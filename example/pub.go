@@ -65,7 +65,7 @@ func read(r io.Reader) chan []amqp.Delivery {
 			msg := amqp.Delivery{Body: body(line), RoutingKey: rk(line)}
 			buffer = append(buffer, msg)
 			i++
-			if i == 200 {
+			if i == 1 {
 				lines <- buffer
 				buffer = make([]amqp.Delivery, 0)
 				i = 0
