@@ -48,6 +48,8 @@ func parseLogLevel() (log.Level, error) {
 		return log.WarnLevel, nil
 	case "error":
 		return log.ErrorLevel, nil
+	case "info":
+		return log.InfoLevel, nil
 	}
 
 	return log.ErrorLevel, errors.New("Incorrect log-level setting")
